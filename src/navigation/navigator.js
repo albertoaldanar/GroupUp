@@ -6,6 +6,7 @@ import Stop from "../components/stop";
 import Login from "../components/login";
 import Wating from "../components/wating";
 import Settings from "../components/settings";
+import Signature from "../components/signature";
 import Incident from "../components/incident";
 import FontAwesome, { Icons } from 'react-native-fontawesome';
 import {View, Modal} from "react-native";
@@ -136,6 +137,12 @@ export const AppNavigatorMain = StackNavigator({
       title: "Registro de parada"
     }
   }, 
+  Signature:{
+    screen: Signature,
+    navigationOptions: {
+      title: "Signature"
+    }
+  },
   Incident: {
     screen: Incident, 
     navigationOptions: {

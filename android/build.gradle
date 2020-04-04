@@ -3,14 +3,17 @@
 buildscript {
     repositories {
         jcenter()
+        google()
         maven {
             url 'https://maven.google.com/'
             name 'Google'
+            url 'https://plugins.gradle.org/m2/'
         }
     }
     dependencies {
+        // classpath 'com.android.tools.build:gradle:3.1.0'
         classpath 'com.android.tools.build:gradle:3.3.2'
-
+         classpath 'gradle.plugin.com.onesignal:onesignal-gradle-plugin:[0.12.1, 0.99.99]'
         // NOTE: Do not place your application dependencies here; they belong
         // in the individual module build.gradle files
     }
@@ -20,6 +23,7 @@ allprojects {
     repositories {
         mavenLocal()
         jcenter()
+        google()
         maven {
             // All of React Native (JS, Obj-C sources, Android binaries) is installed from npm
             url "$rootDir/../node_modules/react-native/android"
@@ -32,6 +36,17 @@ allprojects {
             name 'Google'
         }
     }
+}
+
+subprojects {
+    project.configurations.all {
+    resolutionStrategy.eachDependency { details ->
+        if (details.requested.group == 'com.android.support'
+              && !details.requested.name.contains('multidex') ) {
+           details.useVersion "26.1.0"
+        }
+    }
+  }
 }
 
 ext {

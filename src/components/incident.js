@@ -5,6 +5,7 @@ import Camera from "./camera";
 import * as firebase from 'firebase';
 import 'firebase/firestore';
 import { addNavigationHelpers, NavigationActions  } from 'react-navigation';
+import FontAwesome, {Icons} from "react-native-fontawesome";
 
 class Incident extends Component{
 
@@ -25,26 +26,26 @@ class Incident extends Component{
 
 	      this.dataBase = firebase.initializeApp(firebaseConfig);
 	    }
-	}
+	};
 
 	onChangeInput = (state) => (event,value) => {
 	    this.setState({
 	      [state]:event
 	    });
-  	}
+  };
 
-  	closeOpenCamera(){
-  		this.setState({showCamera: !this.state.showCamera});
-  	}
+  closeOpenCamera(){
+  	this.setState({showCamera: !this.state.showCamera});
+  };
 
-  	addImages(imgDB, imgRN){
-      this.setState({ 
+  addImages(imgDB, imgRN){
+    this.setState({
         imagesDB: this.state.imagesDB.concat([imgDB]),
-        imagesRN: this.state.imagesRN.concat([imgRN]), 
-      })
-  	}
+        imagesRN: this.state.imagesRN.concat([imgRN]),
+    })
+  };
 
-  	async postFail(){
+  async postFail(){
 
 		    const {comments, imagesDB} = this.state;
 		    const {lat, lng} = this.props.navigation.state.params;
@@ -53,20 +54,26 @@ class Incident extends Component{
 		    var date = today.getFullYear()+'-'+(today.getMonth()+1)+'-'+today.getDate();
 		    var time = today.getHours() + ":" + today.getMinutes() + ":" + today.getSeconds();
 		    var dateTime = date+' '+time;
- 
 
-		    const routeid = await AsyncStorage.getItem("ruta"); 
+
+		    const routeid = await AsyncStorage.getItem("ruta");
 
 		    var year = new Date().getFullYear();
 		    var month = new Date().getMonth() +1 ;
 
 		    const paradaID = Math.floor((Math.random() * 10000000) + 1);
 		    const dbParada = firebase.firestore().collection("parada");
+		    const dbImages = firebase.firestore().collection("imagenes");
 
 		    if (imagesDB.length > 0 && comments) {
+
 		        dbParada.add({
-		          ruta: Number(routeid), id: paradaID, lat: lat, lng: lng, client: "INCIDENTE", comments: comments, mes: month, photos: this.state.imagesDB, 
+		          ruta: Number(routeid), id: paradaID, lat: lat, lng: lng, client: "INCIDENTE", comments: comments, mes: month,
 		          arrived_at: dateTime, finished_at: dateTime, phone: "", contact: "", email: "", año: year, fallida: false
+		        });
+
+		        dbImages.add({
+		          ruta: Number(routeid), photos: this.state.imagesDB, client: "INCIDENTE"
 		        });
 
 		        return this.alerts();
@@ -120,14 +127,14 @@ class Incident extends Component{
 		              value = {this.state.comments}
 		              returnKeyType={ 'done' }
 	            	/>
-	            </View>	
+	            </View>
 
 				<View style = {{justifyContent: "space-around", flexDirection: "row"}}>
 	            	{this.showFiles()}
 	            </View>
 
 
-	            { this.state.photos ? 
+	            { this.state.photos ?
 	          		<Text style = {{fontSize: 18}}> Fotos <FontAwesome>{Icons.check}</FontAwesome></Text>
 	          		:
 	          		<TouchableOpacity style = {{marginTop: 20, alignSelf:"center"}} onPress = {this.closeOpenCamera.bind(this)}>
@@ -158,10 +165,10 @@ const styles= {
 	    left: 5,
 	    right: 5,
 	    padding: 20,
-	    marginLeft: 10, 
+	    marginLeft: 10,
 	    marginRight: 10,
 	    backgroundColor: "black",
-  	}, 
+  	},
   	imageStyle:{
 	    width: Dimensions.get('window').width * 0.15,
 	    height: Dimensions.get('window').width * 0.15,

@@ -1,5 +1,5 @@
 import React, {Component} from "react";
-import {View, Text, TouchableOpacity, Alert, AsyncStorage, TextInput, Switch, ScrollView, Modal} from "react-native";
+import {View, Text, TouchableOpacity, Alert, AsyncStorage, TextInput, Switch, ScrollView, Modal, Picker} from "react-native";
 import {NavigationActions} from "react-navigation";
 import { RNCamera } from 'react-native-camera';
 import { Dropdown } from 'react-native-material-dropdown';
@@ -9,15 +9,16 @@ import * as firebase from 'firebase';
 import 'firebase/firestore';
 import  FontAwesome, {Icons} from "react-native-fontawesome";
 import Camera from "./camera";
+import Signature from "./signature";
 
 class QR extends Component{
 
   constructor(props){
     super(props);
     this.state = {
-      registerType: "Manual", routeID: null, lat: 0, lng: 0, client: "", showCamera: false, photos: false, imageUri: "", 
+      registerType: "Registro manual", routeID: null, lat: 0, lng: 0, client: "", showCamera: false, photos: false, imageUri: "", showSignature: false, 
       comments: "", arrivedAt: null, finishedAt: null, comments: "", phone: "", contact: "", email:"", año: "", fallida: false, lat: 0, lng: 0, 
-      imagesDB:[], imagesRN: []
+      imagesDB:[], imagesRN: [], signature: "--", company: "", companies: []
     }
 
     if(!firebase.apps.length){
@@ -35,37 +36,41 @@ class QR extends Component{
     } 
   }
 
-  // async componentWillMount(){
-  //   // this.watchID = navigator.geolocation.watchPosition(
-  //   //   (position) => {
-
-  //   //     var lat = parseFloat(position.coords.latitude)
-  //   //     var lng = parseFloat(position.coords.longitude)
-
-  //   //     console.log(lat, lng);
-
-  //   //     this.setState({
-  //   //       lat, lng
-  //   //     });
-  //   //   }, (error)=> {
-  //   //       console.log(error);
-  //   //   }, {enableHighAccuracy: false, timeout: 1, maximumAge: 1, distanceFilter: 1}
-  //   // );
-  //     const imageGet = await AsyncStorage.getItem('image');
-  //     this.setState({ imageUri: imageGet});
-
-  // }
 
   async componentDidMount(){
+
+    var d = new Date()
+
+    var day = d.getDay();
+
+    const days = [ "Domingo", "Lunes", "Martes", "Miercoles", "Jueves", "Viernes", "Sabado" ];
+
+    const db = firebase.firestore();
+
+    const arrayI= ["Escoje un client"];
+
+    let ingRef = db.collection('itinerario').where('day', '==', days[day]).get()
+      .then(snapshot => {
+        snapshot.forEach(doc => {
+          console.log(doc.data());
+
+          arrayI.push(doc.data().client);
+          this.setState({companies: arrayI});
+        });
+      })
 
     const idGet = await AsyncStorage.getItem('ruta');
     this.setState({ routeID: idGet});
   }
 
+
+  saveSignature(signature){
+    this.setState({ showSignature: false, signature })
+  }
+
   closeOpenCamera(){
       this.setState({showCamera: !this.state.showCamera});
   }
-
 
   sendToMain(){
     const navigateAction = NavigationActions.navigate({
@@ -117,12 +122,17 @@ class QR extends Component{
 
     const paradaID = Math.floor((Math.random() * 10000000) + 1);
     const dbParada = firebase.firestore().collection("parada");
+    const dbImages = firebase.firestore().collection("imagenes");
 
     if (client && phone && comments && this.state.imagesDB.length > 0) {
         dbParada.add({
-          ruta: routeid, id: paradaID, lat: lat, lng: lng, client: client, comments: comments, mes: month, photos: this.state.imagesDB, 
+          ruta: routeid, id: paradaID, lat: lat, lng: lng, client: client, comments: comments, mes: month,
           arrived_at: dateTime, finished_at: dateTime, phone: phone, contact: contact, email: email, año: year, fallida: fallida
         });
+
+        dbImages.add({
+          photos: this.state.imagesDB, ruta: routeID, client: client
+        })
 
         return this.alerts();
     } else {
@@ -138,6 +148,35 @@ class QR extends Component{
     }
   }
 
+  showQR(){
+    return(
+        <RNCamera
+            ref={ref => {
+              this.camera = ref;
+            }}
+            style = {styles.preview}
+            type={RNCamera.Constants.Type.back}
+            flashMode={RNCamera.Constants.FlashMode.off}
+            onBarCodeRead={this.onCodeRead.bind(this)}
+            captureAudio= {false}
+            barCodeTypes={[RNCamera.Constants.BarCodeType.qr]}
+            androidCameraPermissionOptions={{
+                title: 'Permission to use camera',
+                message: 'We need your permission to use your camera',
+                buttonPositive: 'Ok',
+                buttonNegative: 'Cancel',
+            }}
+            androidRecordAudioPermissionOptions={{
+                title: 'Permission to use audio recording',
+                message: 'We need your permission to use your audio',
+                buttonPositive: 'Ok',
+                buttonNegative: 'Cancel',
+            }}
+        />
+    )
+
+  }
+
   alerts(){
     return Alert.alert(
           "Parada registrada!",
@@ -151,6 +190,44 @@ class QR extends Component{
 
 
   registerType(){
+
+    const companies = [
+      "Ecoje un cliente", "Oxxo", "Walmart", "Plaza del sol", "Aldana", "Coppel", "Ley", "La lomita", "El kiosko"
+    ];
+
+    let renderCompanies = this.state.companies.map((l, i) => {
+        return <Picker.Item key = {i} label = {l} value ={l}/>
+
+    });
+
+    const pick = {
+          inputIOS: {
+            color: '#F5F5F5',
+            paddingTop: 13,
+            paddingHorizontal: 10,
+            paddingBottom: 12,
+          },
+          inputAndroid: {
+            color: '#F5F5F5',
+          },
+          placeholderColor: '#F5F5F5',
+          underline: { borderTopWidth: 0 },
+          icon: {
+            position: 'absolute',
+            backgroundColor: '#F5F5F5',
+            borderTopWidth: 5,
+            borderTopColor: '#00000099',
+            borderRightWidth: 5,
+            borderRightColor: 'transparent',
+            borderLeftWidth: 5,
+            borderLeftColor: 'transparent',
+            width: 0,
+            height: 0,
+            top: 20,
+            right: 15,
+          },
+    };
+
     if(this.state.registerType == "QR"){
       return(
         <RNCamera
@@ -205,6 +282,7 @@ class QR extends Component{
               autoCapitalize = 'none'
               onChangeText ={this.onChangeInput('client')}
               value = {this.state.client}
+              returnKeyType={ 'done' }
             />
 
             <TextInput
@@ -214,6 +292,7 @@ class QR extends Component{
               autoCapitalize = 'none'
               onChangeText ={this.onChangeInput('comments')}
               value = {this.state.comments}
+              returnKeyType={ 'done' }
             />
 
             <TextInput
@@ -222,7 +301,9 @@ class QR extends Component{
               placeholderTextColor = "gray"
               autoCapitalize = 'none'
               onChangeText ={this.onChangeInput('phone')}
+              keyboardType='numeric'
               value = {this.state.phone}
+              returnKeyType={ 'done' }
             />
 
             <TextInput
@@ -232,6 +313,7 @@ class QR extends Component{
               autoCapitalize = 'none'
               onChangeText ={this.onChangeInput('contact')}
               value = {this.state.contact}
+              returnKeyType={ 'done' }
             />
 
             <TextInput
@@ -241,6 +323,7 @@ class QR extends Component{
               autoCapitalize = 'none'
               onChangeText ={this.onChangeInput('email')}
               value = {this.state.email}
+              returnKeyType={ 'done' }
             />
           </View>
 
@@ -255,11 +338,12 @@ class QR extends Component{
   render(){
     const {lat, lng} = this.props.navigation.state.params;
     console.log(lat, lng, this.state.routeID);
+    console.log(this.state.companies);
 
     let data = [{
-      value: "QR"
+      value: "Registro Manual"
     }, {
-      value: 'Manual',
+      value: 'QR',
     }];
 
     return(
@@ -309,7 +393,23 @@ const styles = {
       marginLeft: 10, 
       marginRight: 10,
       backgroundColor: "black",
-  }
+  },
+  pickerStyle: {
+    color: "#F5F5F5",
+    textAlign: "left",
+    height: 300,
+    fontSize: 20,
+    borderBottomColor: "#F5F5F5",
+    borderBottomWidth:1,
+    underline: { borderWidth: 0, borderColor: "#F5F5F5" },
+  },
+  pickerContainer: {
+    justifyContent: 'center',
+    marginLeft: 27,
+    position: 'absolute',
+    top: 0,left: 0,
+    right: 0, bottom: 0,
+  },
 }
 
 export default QR;

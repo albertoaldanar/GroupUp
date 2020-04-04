@@ -157,6 +157,7 @@ class Login extends Component{
 	            autoCapitalize = 'none'
 	            onChangeText ={this.onChangeInput('username')}
 	            value = {username}
+	            returnKeyType={ 'done' }
 	          />
 
 	          <TextInput
@@ -166,6 +167,7 @@ class Login extends Component{
 	            autoCapitalize = 'none'
 	            onChangeText ={this.onChangeInput('name')}
 	            value = {name}
+	            returnKeyType={ 'done' }
 	          />
 	          <TextInput
 	            style={{height: 40, borderBottomColor: 'black', borderBottomWidth: 0.5, color:"black", marginBottom: 25 }}
@@ -175,6 +177,7 @@ class Login extends Component{
 	            autoCapitalize = 'none'
 	            onChangeText ={this.onChangeInput('password')}
 	            value = {password}
+	            returnKeyType={ 'done' }
 	          />
 
 	          <View style = {{marginLeft: 15, marginRight: 15, marginTop: 55}}>
@@ -201,16 +204,17 @@ class Login extends Component{
 	            autoCapitalize = 'none'
 	            onChangeText ={this.onChangeInput('username')}
 	            value = {username}
+	            returnKeyType={ 'done' }
 	          />
 	          <TextInput
 	            style={{height: 40, borderBottomColor: 'black', borderBottomWidth: 0.5, color:"black", color: "black"}}
-	            placeholder = "Password"
+	            placeholder = "Password 1"
 	            placeholderTextColor = "gray"
 	            secureTextEntry={true}
 	            autoCapitalize = 'none'
 	            onChangeText ={this.onChangeInput('password')}
 	            value = {password}
-	            multiline = {true}
+	            returnKeyType={ 'done' }
 	          />
 
 	          <View style = {{marginLeft: 15, marginRight: 15, marginTop: 55}}>

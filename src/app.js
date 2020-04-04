@@ -1,6 +1,7 @@
 import React from "react";
 import {AsyncStorage} from "react-native";
 import {AppNavigatorMain, AppNavigatorLogin} from "./navigation/navigator";
+import OneSignal from 'react-native-onesignal'; 
 
 class App extends React.Component {
 
@@ -9,7 +10,10 @@ class App extends React.Component {
 		this.state = {
 			currentUser: ""
 		}
+		console.log('prueba')
+		OneSignal.init("9ed06bcd-4767-4718-998d-804eb0aa5850");
 	}
+
 
 	async componentDidMount(){
 		const userGet = await AsyncStorage.getItem('username');

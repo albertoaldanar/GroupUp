@@ -61,6 +61,10 @@ class RouteModal extends Component{
       } catch (error) {
               console.log(error.message);
           }
+
+
+      this.props.formFilled
+      
       return this.alerts(rutaID)
 
       // return fetch(`http://${Url}:8000/post_busroute/`, {
@@ -107,7 +111,8 @@ class RouteModal extends Component{
           {text: 'OK' , onPress: this.props.formFilled},
         ],
         {cancelable: false},
-      );
+    );
+
   }
 
   changeGas(gas){

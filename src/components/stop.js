@@ -7,12 +7,13 @@ import Url from "./reusable/urls";
 import * as firebase from 'firebase';
 import 'firebase/firestore';
 import Camera from "./camera";
+import Signature from "./signature";
 
 class Stop extends Component{
 
   constructor(props){
     super(props);
-    this.state = {lat: 0, lng: 0, comments: "", routeID: null, showCamera: false, fallida: false, imagesDB: [], imagesRN: []}
+    this.state = {lat: 0, lng: 0, comments: "", routeID: null, showCamera: false, fallida: false, imagesDB: [], imagesRN: [], showSignature: false, signature: ""}
 
     if(!firebase.apps.length){
       const firebaseConfig = {
@@ -40,6 +41,9 @@ class Stop extends Component{
     });
   }
 
+  saveSignature(signature){
+    this.setState({ showSignature: false, signature })
+  }
 
   closeOpenCamera(){
       this.setState({showCamera: !this.state.showCamera});
@@ -68,13 +72,23 @@ class Stop extends Component{
 
     const paradaID = Math.floor((Math.random() * 10000000) + 1);
     const dbParada = firebase.firestore().collection("parada");
+    const dbImages = firebase.firestore().collection("imagenes");
+    const dbSignature = firebase.firestore().collection("firma");
 
 
     if(this.state.imagesDB.length > 0){
         dbParada.add({
           ruta: Number(routeid), id: paradaID, lat: lat, lng: lng, client: client, comments: this.state.comments,
-          arrived_at: dateTime, finished_at: dateTime, mes: month, photos: this.state.imagesDB, año: year
+          arrived_at: dateTime, finished_at: dateTime, mes: month, año: year
         });
+
+        dbImages.add({
+          parada: Number(paradaID), photos: this.state.imagesDB, client: client
+        });
+
+        dbSignature.add({
+          signature: this.state.signature, client: client, parada: paradaID
+        })
 
         return this.alerts();
     } else {
@@ -117,6 +131,7 @@ class Stop extends Component{
 
   render(){
     const {lat, lng, client} = this.props.navigation.state.params;
+    console.log(this.state.signature);
 
     return(
       <View style ={{flex: 1, backgroundColor: "#ffff"}}>
@@ -130,9 +145,9 @@ class Stop extends Component{
               </View>
             </View>
 
-            <View style= {{flexDirection: "row", justifyContent: "space-between"}}>
+            <View style= {{flexDirection: "row", justifyContent: "space-around", marginTop: 45, marginBottom: 10}}>
               <View style= {{flexDirection: "row"}}>
-                <Text style = {{marginLeft: 5}}>Fallida:  </Text>
+                <Text>Fallida:  </Text>
                 <Switch
                   onValueChange = {() => this.setState({fallida: !this.state.fallida})}
                   value = {this.state.fallida}
@@ -140,11 +155,14 @@ class Stop extends Component{
                 />
               </View>
 
-              <TouchableOpacity style = {{alignSelf:"center", marginTop: -10, marginRight: 5}} onPress = {this.closeOpenCamera.bind(this)}>
+              <TouchableOpacity onPress = {()=> this.setState({showSignature: true})}>  
+                <FontAwesome style = {{fontSize: 20}}>{Icons.edit}</FontAwesome>
+              </TouchableOpacity>
+
+              <TouchableOpacity style = {{alignSelf:"center", marginTop: -10}} onPress = {this.closeOpenCamera.bind(this)}>
                   <Text style = {{fontSize: 18}}> Subir fotos <FontAwesome>{Icons.camera}</FontAwesome></Text>
               </TouchableOpacity>
             </View>
-
 
             <View>  
               <Text style = {{marginLeft: 5, marginTop: 15}}>Fotos: </Text>
@@ -172,6 +190,10 @@ class Stop extends Component{
           <TouchableOpacity style = {styles.startButton} onPress = {this.postStop.bind(this)}>
             <Text style = {{textAlign:"center", fontSize: 15, color:"white"}}>REGISTRAR PARADA</Text>
           </TouchableOpacity>
+
+          <Modal visible = {this.state.showSignature}>
+            <Signature closeModal = {()=> this.setState({showSignature: false})} saveSignature = {this.saveSignature.bind(this)}/>
+          </Modal>
       </View>
     );
   }

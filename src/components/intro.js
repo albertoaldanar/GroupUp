@@ -1,8 +1,8 @@
 import React, {Component} from "react";
-import {View, Text, TouchableOpacity, Image, Dimensions, StatusBar, Modal, AsyncStorage, Alert, PermissionsAndroid} from "react-native";
+import {View, Text, TouchableOpacity, Image, Dimensions, StatusBar, Modal, AsyncStorage, Alert, PermissionsAndroid, ScrollView} from "react-native";
 import RouteModal from "./reusable/routeModal";
 import ImageSlider from 'react-native-image-slider';
-import { addNavigationHelpers, NavigationActions  } from 'react-navigation';
+import { addNavigationHelpers, NavigationActions, NavigationEvents } from 'react-navigation';
 import MapView, { PROVIDER_GOOGLE,  Marker, Polyline} from 'react-native-maps';
 import SideMenu from "react-native-side-menu";
 import FontAwesome, {Icons} from "react-native-fontawesome";
@@ -12,6 +12,9 @@ import MyStop from "./reusable/stop";
 import * as firebase from 'firebase';
 import 'firebase/firestore';
 import Icon from 'react-native-vector-icons/FontAwesome';
+import DialogInput from 'react-native-dialog-input';
+import MultiSelect from 'react-native-multiple-select';
+
 
 const {width, height} = Dimensions.get("window");
 
@@ -21,7 +24,7 @@ const LONGITUDE_DELTA = 0.066987
 
 
 class Intro extends Component{
-
+  
   constructor(props){
     super(props)
     this.state = {
@@ -41,7 +44,7 @@ class Intro extends Component{
       lat: 0,
       lng: 0,
       currentUser: "",
-      wating: true
+      wating: true, quickID: 0, isDialogVisible: false, endRouteDialog: false, selectedItems: [], showList: false, companies: []
     }
 
       if(!firebase.apps.length){
@@ -82,11 +85,18 @@ class Intro extends Component{
 
   getStops(ruta){
 
+    var d = new Date()
+    var day = d.getDay();
+
     const db = firebase.firestore()
 
     var idNumber = Number(this.state.routeID);
 
+    const days = [ "Domingo", "Lunes", "Martes", "Miercoles", "Jueves", "Viernes", "Sabado" ];
+
     const arrayI= [];
+    const arrayII = [];
+
     let ingRef = db.collection('parada').where('ruta', '==', idNumber).get()
       .then(snapshot => {
         snapshot.forEach(doc => {
@@ -94,6 +104,17 @@ class Intro extends Component{
 
           arrayI.push(doc.data());
           this.setState({markers: arrayI});
+        });
+      })
+
+
+    let itineRef = db.collection('itinerario').where('day', '==', days[day]).get()
+      .then(snapshot => {
+        snapshot.forEach(doc => {
+          console.log(doc.data());
+
+          arrayII.push(doc.data().client);
+          this.setState({companies: arrayII});
         });
       })
   }
@@ -130,7 +151,7 @@ class Intro extends Component{
       return this.getStops(idGet);
   }
 
-  async postTrashOrGas(type){
+  async postTrashOrGas(input, type){
     var today = new Date();
     var date = today.getFullYear()+'-'+(today.getMonth()+1)+'-'+today.getDate();
     var time = today.getHours() + ":" + today.getMinutes() + ":" + today.getSeconds();
@@ -167,85 +188,86 @@ class Intro extends Component{
     } else {
         dbParada.add({
           id: paradaID, ruta: Number(routeid), lat: this.state.lat, lng: this.state.lng, arrived_at: dateTime, 
-          finished_at: dateTime, client: "GASOLINA", phone: "", email: "", contact: "", comments: "", año: year, mes: month
+          finished_at: dateTime, client: "GASOLINA", phone: "", email: "", contact: "", comments: "", año: year, mes: month, lt: Number(input)
         });
+
+        this.setState({isDialogVisible: false})
     }
 
       return this.getStops(Number(routeid));
   }
 
-  finishRoute(){
-    var today = new Date();
-    var date = today.getFullYear()+'-'+(today.getMonth()+1)+'-'+today.getDate();
-    var time = today.getHours() + ":" + today.getMinutes() + ":" + today.getSeconds();
-    var dateTime = date+' '+time;
+  finishRoute(input){
+    // var today = new Date();
+    // var date = today.getFullYear()+'-'+(today.getMonth()+1)+'-'+today.getDate();
+    // var time = today.getHours() + ":" + today.getMinutes() + ":" + today.getSeconds();
+    // var dateTime = date+' '+time;
 
     const rId = Number(this.state.routeID);
 
     const db = firebase.firestore();
 
 
+    // let ingRef = db.collection('parada').where('ruta', '==', rID).get()
+    //   .then(snapshot => {
+    //     snapshot.forEach(doc => {
+    //       console.log(doc.data());
 
+    //       arrayI.push(doc.data());
+    //       this.setState({markers: arrayI});
+    //     });
+    //   })
      let rutaRef = db.collection("ruta").where("id", "==", rId).get()
       .then(function(querySnapshot) {
           querySnapshot.forEach(function(doc) {
               console.log(doc.id, " => ", doc.data());
               // Build doc ref from doc.id
-              db.collection("ruta").doc(doc.id).update({terminado: true});
+              db.collection("ruta").doc(doc.id).update({lt: Number(input), done: true});
          });
       })
 
+      this.setState({markers: [], endRouteDialog: false})
 
       var start = AsyncStorage.removeItem("started");
       var id = AsyncStorage.removeItem('ruta');
 
-      return this.setState({startedRoute: false, routeID: null})
+      return this.setState({ markers: [], startedRoute: false, routeID: null, endRouteDialog: false }); 
+
   }
 
-  endRouteAlert(){
-      return Alert.alert(
-          "Quieres terminar la ruta de hoy?",
-          "Presiona SI para finalizar ruta",
-        [
-          {text: 'SI' , onPress: this.finishRoute.bind(this)},
-          {text: 'Cancelar', onPress: () => console.log('Cancel Pressed'), style: 'cancel'}
-        ],
-        {cancelable: true},
-      );
-  }
+  // endRouteAlert(){
+  //     return Alert.alert(
+  //         "Quieres terminar la ruta de hoy?",
+  //         "Presiona SI para finalizar ruta",
+  //       [
+  //         {text: 'SI' , onPress: this.finishRoute.bind(this)},
+  //         {text: 'Cancelar', onPress: () => console.log('Cancel Pressed'), style: 'cancel'}
+  //       ],
+  //       {cancelable: true},
+  //     );
+  // }
 
-   customAlert(type){
+   customAlert(input, type){
       if(type == "trash"){
           return Alert.alert(
               "Quieres registrar una parada de basura?",
               "Presiona SI para registrar",
             [
-              {text: 'SI' , onPress: this.postTrashOrGas.bind(this, "trash")},
-              {text: 'Cancelar', onPress: () => console.log('Cancel Pressed'), style: 'cancel'}
-            ],
-            {cancelable: true},
-          );
-      } else {
-          return Alert.alert(
-              "Quieres registrar una parada de gasolina?",
-              "Presiona SI para registrar",
-            [
-              {text: 'SI' , onPress: this.postTrashOrGas.bind(this, "gas")},
+              {text: 'SI' , onPress: this.postTrashOrGas.bind(this, null, "trash")},
               {text: 'Cancelar', onPress: () => console.log('Cancel Pressed'), style: 'cancel'}
             ],
             {cancelable: true},
           );
       }
-
   }
 
 
   async validateForm(){
-    const startedGet = await AsyncStorage.getItem('started');
-      this.setState({ startedRoute: startedGet});
 
-    const idGet = await AsyncStorage.getItem('id');
-      this.setState({ routeID: idGet, showRegisterForm: !this.state.showRegisterForm});
+    const idGet = await AsyncStorage.getItem('ruta');
+    const startedGet = await AsyncStorage.getItem('started');
+    
+    this.setState({ routeID: idGet, showRegisterForm: !this.state.showRegisterForm, startedRoute: startedGet});
   }
 
   onRegionChange(region) {
@@ -257,18 +279,22 @@ class Intro extends Component{
       return(
         <View style = {styles.buttons}>
           <TouchableOpacity style = {{backgroundColor: "rgba(185,216,230 ,0.7)", borderRadius: 50, padding: 20}} onPress = {this.sendToQR.bind(this)}>
-              <FontAwesome style = {{fontSize: 30}}>{Icons.qrcode}</FontAwesome>
+              <FontAwesome style = {{fontSize: 30}}>{Icons.mapMarker}</FontAwesome>
           </TouchableOpacity>
 
-          <TouchableOpacity style = {{backgroundColor: "rgba(102,204,153,0.5)", borderRadius: 50, padding: 20}} onPress= {this.customAlert.bind(this, "trash")}>
+          <TouchableOpacity style = {{backgroundColor: "rgba(102,204,153,0.5)", borderRadius: 50, padding: 20}} onPress= {this.customAlert.bind(this, null, "trash")} >
               <FontAwesome style = {{fontSize: 30}}>{Icons.trash}</FontAwesome>
           </TouchableOpacity>
 
-          <TouchableOpacity style = {{backgroundColor: "rgba(102,204,153,0.5)", borderRadius: 50, padding: 20}} onPress= {this.customAlert.bind(this, "gas")}>
+          <TouchableOpacity style = {{backgroundColor: "rgba(102,204,153,0.5)", borderRadius: 50, padding: 20}} onPress= {() => this.setState({isDialogVisible: true})}>
               <FontAwesome style = {{fontSize: 30}}>{Icons.tint}</FontAwesome>
           </TouchableOpacity>
 
-          <TouchableOpacity style = {{backgroundColor: "rgba(215, 44, 0, 0.7)", borderRadius: 50, padding: 20}} onPress = {this.endRouteAlert.bind(this)}>
+          <TouchableOpacity style = {{backgroundColor: "#F5F5F5", borderRadius: 50, padding: 20}} onPress = {this.sendToIncident.bind(this)}>
+              <FontAwesome style = {{fontSize: 30}}>{Icons.times}</FontAwesome>
+          </TouchableOpacity>
+
+          <TouchableOpacity style = {{backgroundColor: "rgba(215, 44, 0, 0.7)", borderRadius: 50, padding: 20}} onPress = {() => this.setState({endRouteDialog: true})}>
             <FontAwesome style = {{fontSize: 30}}>{Icons.checkCircle}</FontAwesome>
           </TouchableOpacity>
         </View>
@@ -311,11 +337,11 @@ class Intro extends Component{
   }
 
   showMap(){
-      const mark = this.state.markers.map(x => {
-        return {latitude: x.lat, longitude: x.lng}
-      });
+      // const mark = this.state.markers.map(x => {
+      //   return {latitude: x.lat, longitude: x.lng}
+      // });
 
-    if(this.state.routeID){
+
       return (
         <MapView
             showsUserLocation
@@ -336,35 +362,30 @@ class Intro extends Component{
                 />
               </View>
           ))}
-            {
-              mark.length > 1 ? 
-              <Polyline
-                  coordinates={mark}
-                  strokeColors={[
-                    "#00B073",
-                  ]}
-                  strokeWidth={4}
-              /> : 
-              null
-            }
         </MapView>
       )
-    } else {
-      return(
-        <MapView
-            style={ styles.map }
-            initialRegion={this.state.region}
-            onRegionChange={this.onRegionChange.bind(this)}
-        >
-        </MapView>
-      );
-    }
   }
   
   handleLogout(){
     setTimeout(()=> {
         this.setState({showModal: true})
     }, 3000)
+  }
+
+  onSelectedItemsChange = selectedItems => {
+    this.setState({ selectedItems });
+  };
+
+  renderCheckBox(){
+      const {companies} = this.state;
+
+      return companies.map(x => {
+        return(
+          <ScrollView style = {{flex: 1, marginTop: 10}}>
+            <Text style = {{color: "gray", marginLeft: 15, marginBottom: 10, fontSize: 18}}> {x} </Text>
+          </ScrollView>
+        );
+      })
   }
 
   render(){
@@ -375,25 +396,52 @@ class Intro extends Component{
 
     return(
         <View style = {{flex: 1}}>
+
           <StatusBar hidden= {true} />
           {this.showMap()}
           { this.state.startedRoute ?
             <View style = {{marginTop: 20, flexDirection: "row", justifyContent: "space-between"}}>
-              <TouchableOpacity style ={{marginLeft: 16}} onPress= {this.getStops.bind(this, this.state.routeID)}>
-                <FontAwesome style = {{fontSize: 26}}>{Icons.repeat}</FontAwesome>
+              <TouchableOpacity style ={{marginLeft: 16}} onPress = {() => this.setState({showList: true})}>
+                <FontAwesome style = {{fontSize: 26}}>{Icons.list}</FontAwesome>
               </TouchableOpacity>
 
-              <TouchableOpacity style ={{marginRight: 16}} onPress = {this.sendToIncident.bind(this)}>
-                <FontAwesome style = {{fontSize: 26}}>{Icons.times}</FontAwesome>
+              <TouchableOpacity style ={{marginRight: 16}} onPress= {this.getStops.bind(this, this.state.routeID)}>
+                <FontAwesome style = {{fontSize: 26}}>{Icons.repeat}</FontAwesome>
               </TouchableOpacity>
             </View> :
             null
           }
 
-
-          <Text>{this.state.lat}, {this.state.lng}</Text>
+          <View style = {{marginTop: 25}}>
+            <Text>{this.state.lat}, {this.state.lng}</Text>
+            <Text>{this.state.routeID}, {this.state.startedRoute}</Text>
+            <Text>{this.state.markers.length}</Text>
+          </View>
 
           {this.routeOrQR()}
+
+          <DialogInput isDialogVisible={this.state.isDialogVisible}
+            title={"Cantidad de gasolina"}
+            message={"Que cantidad de gasolina se deposito al vehiculo?"}
+            hintInput ={"Litros de gasolina"}
+            cancelText ="Cancelar"
+            submitText = "Registrar"
+            initValueTextInput = {0}
+            submitInput={ (input) => this.postTrashOrGas(input)}
+            closeDialog={ () => this.setState({isDialogVisible: false})}>
+          </DialogInput>
+
+
+          <DialogInput isDialogVisible={this.state.endRouteDialog}
+            title={"Gasolina total"}
+            message={"Cuanta gaolina tiene el camión?"}
+            hintInput ={"Litros de gasolina"}
+            cancelText ="Cancelar"
+            submitText = "Registrar"
+            initValueTextInput = {0}
+            submitInput={ (input) => this.finishRoute(input)}
+            closeDialog={ () => this.setState({endRouteDialog: false})}>
+          </DialogInput>
 
           <Modal
             animationType="slide"
@@ -404,6 +452,16 @@ class Intro extends Component{
                 showRegisterForm= {this.showRegisterForm.bind(this)}
                 currentUser = {this.state.currentUser}
               />
+          </Modal>
+          
+          <Modal visible = {this.state.showList}>
+            <View style = {{flex: 1}}>
+              <TouchableOpacity style = {{margin: 15}} onPress = {() => this.setState({showList: false})}>
+                <Text style = {{fontSize: 20}}>X</Text>
+              </TouchableOpacity>
+
+              {this.renderCheckBox()}
+            </View>
           </Modal>
         </View>
     );

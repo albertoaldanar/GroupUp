@@ -3,6 +3,7 @@ package com.groupup;
 import com.airbnb.android.react.maps.MapsPackage;
 import android.app.Application;
 import com.facebook.react.ReactApplication;
+import com.geektime.rnonesignalandroid.ReactNativeOneSignalPackage;
 import com.BV.LinearGradient.LinearGradientPackage;
 import com.oblador.vectoricons.VectorIconsPackage;
 import com.facebook.react.ReactNativeHost;
@@ -11,6 +12,7 @@ import com.facebook.react.shell.MainReactPackage;
 import com.facebook.soloader.SoLoader;
 import org.reactnative.camera.RNCameraPackage;
 import com.rnfs.RNFSPackage;
+import com.rssignaturecapture.RSSignatureCapturePackage;
 
 import java.util.Arrays;
 import java.util.List;
@@ -27,11 +29,13 @@ public class MainApplication extends Application implements ReactApplication {
     protected List<ReactPackage> getPackages() {
       return Arrays.<ReactPackage>asList(
           new MainReactPackage(),
+            new ReactNativeOneSignalPackage(),
           new MapsPackage(),
             new LinearGradientPackage(),
             new VectorIconsPackage(), 
             new RNCameraPackage(),
-            new RNFSPackage()
+            new RNFSPackage(),
+            new RSSignatureCapturePackage()
       );
     }
 
